@@ -1,6 +1,4 @@
 from rest_framework import viewsets
-
-# Create your views here.
 from rest_framework.permissions import IsAuthenticated
 
 from bunnies.models import Bunny, RabbitHole

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django_fakeredis import FakeRedis
 
-# Create your tests here.
 from django.urls import reverse
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.test import APITestCase
@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 from bunnies.models import RabbitHole, Bunny
 
 
+@FakeRedis("django_redis.get_redis_connection")
 class RabbitHolesTests(APITestCase):
 
     def setUp(self):
@@ -21,7 +22,6 @@ class RabbitHolesTests(APITestCase):
         '''
         I can only view the list of rabbitholes if I'm logged in
         '''
-
         assert self.client.get(self.url).status_code == 401
         User.objects.create_user(username='admin', email='rabbitoverlord@test.com', password='rabbits')
         self.client.login(username='admin', password='rabbits')
@@ -56,7 +56,7 @@ class RabbitHolesTests(APITestCase):
             Bunny.objects.create(name=name, home=hole)
 
         other_rabbit_hole = RabbitHole.objects.create(owner=user1, location='location2', latitude=1.0, longitude=1.0)
-        other_bunny = Bunny.objects.create(name='Snowball', home=other_rabbit_hole)
+        Bunny.objects.create(name='Snowball', home=other_rabbit_hole)
 
         self.client.login(username=user1.username, password='rabbits')
 
@@ -80,7 +80,9 @@ class RabbitHolesTests(APITestCase):
         data = {
             'owner': wrong_user.id,
             'location': 'somewhere',
-            'bunnies': []
+            'bunnies': [],
+            "latitude": 0,
+            "longitude": 0
         }
 
         response = self.client.post('/rabbitholes/', data=data)
@@ -95,7 +97,7 @@ class RabbitHolesTests(APITestCase):
         A superuser can delete any of the rabbitholes
         '''
         user = User.objects.create_user(username='user', email='user@test.com', password='rabbits')
-        superuser = User.objects.create_user(username='superuser', email='superuser@test.com', password='rabbits',
+        User.objects.create_user(username='superuser', email='superuser@test.com', password='rabbits',
                                              is_superuser=True)
 
         rabbit_hole = RabbitHole.objects.create(owner=user, location='location', latitude=1.0, longitude=1.0)
@@ -141,7 +143,3 @@ class RabbitHolesTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(names), set(response.data['family_members']))
         assert other_bunny.name not in response.data['family_members']
-
-
-
-

@@ -1,7 +1,10 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import QuerySet
 
-# Create your models here.
+
+class TooManyBunniesInRabbitHole(ValueError):
+    ...
 
 
 class RabbitHole(models.Model):
@@ -18,12 +21,23 @@ class RabbitHole(models.Model):
         return self.location
 
 
+class BunniesQuerySet(QuerySet):
+    def create(self, **kwargs):
+        bunnies_limit = kwargs["home"].bunnies_limit
+        if bunnies_limit == kwargs["home"].bunnies.count():
+            raise TooManyBunniesInRabbitHole(f"Too many bunnies. Maximum allowed is {bunnies_limit}")
+
+        return super().create(**kwargs)
+
+
 class Bunny(models.Model):
     '''
 
     '''
     name = models.CharField(max_length=64)
     home = models.ForeignKey(RabbitHole, on_delete=models.CASCADE, related_name='bunnies')
+
+    objects = BunniesQuerySet().as_manager()
 
     def __str__(self) -> str:
         return f"{self.name} ({self.id})"

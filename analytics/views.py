@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import timedelta
 
+from django.db.models import Sum
 from django.utils import timezone
-
-# Create your views here.
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from analytics.models import UserVisit
 
 
 class HelloWorld(APIView):
@@ -14,12 +15,16 @@ class HelloWorld(APIView):
     """
 
     def get(self, request, format=None):
+        this_hour = timezone.now().replace(minute=0, second=0, microsecond=0)
+        one_hour_before = this_hour - timedelta(hours=1)
+
+        user_visits = UserVisit.objects.all()
+
         data = {
             'version': 1.0,
             'time': timezone.now(),
-            'recent_visitors': 0,
-            'all_visitors': 0,
-            'all_visits': 0,
+            'recent_visitors': user_visits.filter(last_seen__range=(one_hour_before, this_hour)).count(),
+            'all_visitors': user_visits.count(),
+            'all_visits': user_visits.aggregate(Sum("visits"))["visits__sum"],
         }
         return Response(data)
-

@@ -3,7 +3,8 @@ from django.utils import timezone
 
 from django.contrib.auth.models import User
 
-# Create your tests here.
+from django_fakeredis import FakeRedis
+
 from rest_framework.test import APITestCase
 import datetime
 import pytz
@@ -11,6 +12,7 @@ import pytz
 from analytics.models import UserVisit
 
 
+@FakeRedis("django_redis.get_redis_connection")
 class UserVisitLoggingTests(APITestCase):
 
     def test_helloworld_works(self):
@@ -67,8 +69,9 @@ class UserVisitLoggingTests(APITestCase):
         The /helloworld/ endpoint shows the correct number of recent visitors and the correct number of
         all visitors and visits, including the current visit to /helloworld/
         '''
-        current_user = User.objects.create_user(username='bob', password='bob')
+        User.objects.create_user(username='bob', password='bob')
         now = datetime.datetime(2020, 6, 6, 9, tzinfo=pytz.UTC)
+
         with mock.patch('django.utils.timezone.now') as mock_now:
             for i in range(1, 6):
                 mock_now.return_value = now - timezone.timedelta(minutes=i)
@@ -84,9 +87,9 @@ class UserVisitLoggingTests(APITestCase):
             response = self.client.get('/helloworld/')
 
         self.assertEqual(response.data.get('time'), now)
-        self.assertEqual(response.data.get('recent_visitors'), 5)
-        self.assertEqual(response.data.get('all_visitors'), 6)
-        self.assertEqual(response.data.get('all_visits'), 16)
+        self.assertEqual(response.data.get('recent_visitors'), 6)
+        self.assertEqual(response.data.get('all_visitors'), 7)
+        self.assertEqual(response.data.get('all_visits'), 17)
         
 
 

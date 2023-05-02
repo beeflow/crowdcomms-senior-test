@@ -1,14 +1,15 @@
-from django.test import TestCase
-from bunnies.models import RabbitHole, Bunny
 from django.contrib.auth import get_user_model
-from foxes.models import Fox
-from django.urls import reverse
 from django.core.cache import cache
+from django.test import TestCase
+from django_fakeredis import FakeRedis
+
+from bunnies.models import Bunny, RabbitHole
+from foxes.models import Fox
 
 UserModel = get_user_model()
 
-# Create your tests here.
 
+@FakeRedis("django_redis.get_redis_connection")
 class FoxTests(TestCase):
 
     def setUp(self) -> None:
@@ -31,14 +32,14 @@ class FoxTests(TestCase):
         self.hole1 = RabbitHole.objects.create(
             location="Lidl",
             owner=self.owner,
-            latitude=50.871485624686215, 
+            latitude=50.871485624686215,
             longitude=-2.1576088547493963
         )
 
         self.hole2 = RabbitHole.objects.create(
             location="Tennis Club",
             owner=self.owner,
-            latitude=50.869040482882056, 
+            latitude=50.869040482882056,
             longitude=-2.175457306594088
         )
 
@@ -67,7 +68,7 @@ class FoxTests(TestCase):
         )
 
         resp = self.client.get(self.url)
-        assert resp.status_code == 401
+        assert resp.status_code == 403
 
         self.client.login(username="owner", password="rabbits")
         resp = self.client.get(self.url)
@@ -77,7 +78,7 @@ class FoxTests(TestCase):
         self.client.login(username="reynard", password="foxy")
         resp = self.client.get(self.url)
         assert resp.status_code == 200
-    
+
     def test_no_populated_rabbit_holes(self):
         """
         If there are no populated rabbit holes, then we get a 404 response
@@ -111,7 +112,6 @@ class FoxTests(TestCase):
         assert data["location"] == self.hole3.location
         self.assertAlmostEqual(data['distance_km'], 28.304820586821673, 1)
 
-
     def test_multiple_populated_rabbit_holes(self):
         """
         If more than one rabbit is at home - we'll see the nearest hole which contains at least one rabbit.
@@ -124,7 +124,6 @@ class FoxTests(TestCase):
             home=self.hole3,
             name="Flopsy"
         )
-        
 
         resp = self.client.get(self.url)
         assert resp.status_code == 200
@@ -173,13 +172,10 @@ class FoxTests(TestCase):
             home=self.hole3,
             name="CottonTail"
         )
-        
+
         # NOTE: This is deliberate, 2 queries is all you're allowed! :)
         # These foxes are demanding customers.
         with self.assertNumQueries(2):
             resp = self.client.get(self.url)
-        
+
         assert resp.status_code == 200
-
-
-

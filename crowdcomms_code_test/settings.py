@@ -51,6 +51,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'analytics.middleware.UserVisitMiddleware',
+    "crowdcomms_code_test.middleware.error_handler.ErrorHandlerMiddleware",
+    "crowdcomms_code_test.middleware.request_middleware.RequestMiddleware"
 ]
 
 ROOT_URLCONF = 'crowdcomms_code_test.urls'
@@ -127,7 +129,7 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'crowdcomms_code_test.authentication.SessionAuthentication',
     ]
 }
 

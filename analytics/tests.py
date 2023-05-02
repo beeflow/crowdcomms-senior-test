@@ -1,16 +1,16 @@
-import datetime
 from unittest import mock
-
-import pytz
-from django.contrib.auth.models import User
 from django.utils import timezone
-from django_fakeredis import FakeRedis
+
+from django.contrib.auth.models import User
+
+# Create your tests here.
 from rest_framework.test import APITestCase
+import datetime
+import pytz
 
 from analytics.models import UserVisit
 
 
-@FakeRedis("django_redis.get_redis_connection")
 class UserVisitLoggingTests(APITestCase):
 
     def test_helloworld_works(self):
@@ -36,11 +36,8 @@ class UserVisitLoggingTests(APITestCase):
         user = User.objects.create_user(username='bob', password='bob')
         self.client.login(username='bob', password='bob')
         self.client.get('/helloworld/')
-
-        # The view doesn't save any visit
-        self.assertEqual(UserVisit.objects.count(), 0)
-        # self.assertEqual(UserVisit.objects.count(), 1)
-        # self.assertEqual(UserVisit.objects.first().user, user)
+        self.assertEqual(UserVisit.objects.count(), 1)
+        self.assertEqual(UserVisit.objects.first().user, user)
 
     def test_other_views_log_last_logins(self):
         """
@@ -49,12 +46,8 @@ class UserVisitLoggingTests(APITestCase):
         user = User.objects.create_user(username='bob', password='bob')
         self.client.login(username='bob', password='bob')
         self.client.get('/bunnies/')
-
-        # The view doesn't save any visit
-        self.assertEqual(UserVisit.objects.count(), 0)
-
-        # self.assertEqual(UserVisit.objects.count(), 1)
-        # self.assertEqual(UserVisit.objects.first().user, user)
+        self.assertEqual(UserVisit.objects.count(), 1)
+        self.assertEqual(UserVisit.objects.first().user, user)
 
     def test_only_one_UserVisit_created_per_user(self):
         '''
@@ -63,19 +56,11 @@ class UserVisitLoggingTests(APITestCase):
         user = User.objects.create_user(username='bob', password='bob')
         self.client.login(username='bob', password='bob')
         self.client.get('/bunnies/')
-
-        # The view doesn't save any visit
-        self.assertEqual(UserVisit.objects.count(), 0)
-        # self.assertEqual(UserVisit.objects.count(), 1)
-
+        self.assertEqual(UserVisit.objects.count(), 1)
         self.client.get('/bunnies/')
-
-        # The view doesn't save any visit
-        self.assertEqual(UserVisit.objects.count(), 0)
-        # self.assertEqual(UserVisit.objects.count(), 1)
-        # visit = UserVisit.objects.get(user=user)
-        #
-        # assert visit.visits == 2
+        self.assertEqual(UserVisit.objects.count(), 1)
+        visit = UserVisit.objects.get(user=user)
+        assert visit.visits == 2
 
     def test_show_number_of_visitors_and_visits(self):
         '''
@@ -98,15 +83,10 @@ class UserVisitLoggingTests(APITestCase):
             self.client.login(username='bob', password='bob')
             response = self.client.get('/helloworld/')
 
-        # The view doesn't save any visit
-        self.assertEqual(response.data.get('recent_visitors'), 0)
-        self.assertEqual(response.data.get('all_visitors'), 0)
-        self.assertEqual(response.data.get('all_visits'), 0)
-
-        # self.assertEqual(response.data.get('time'), now)
-        # self.assertEqual(response.data.get('recent_visitors'), 5)
-        # self.assertEqual(response.data.get('all_visitors'), 6)
-        # self.assertEqual(response.data.get('all_visits'), 16)
+        self.assertEqual(response.data.get('time'), now)
+        self.assertEqual(response.data.get('recent_visitors'), 5)
+        self.assertEqual(response.data.get('all_visitors'), 6)
+        self.assertEqual(response.data.get('all_visits'), 16)
         
 
 
